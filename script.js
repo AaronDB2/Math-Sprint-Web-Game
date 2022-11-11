@@ -32,9 +32,78 @@ let equationObject = {};
 const wrongFormat = [];
 
 // Time
+let timer;
+let timePlayed = 0;
+let baseTime = 0;
+let penaltyTime = 0;
+let finalTime = 0;
+let finalTimeDisplay = '0.0s';
 
 // Scroll
 let valueY = 0;
+
+// Reset Game
+function playAgain() {
+  gamePage.addEventListener('click', startTimer);
+  showPage(scorePage, splashPage);
+  equationsArray = [];
+  playerGuessArray = [];
+  valueY = 0;
+  playAgainBtn.hidden = true;
+}
+
+// Add to Window for use in HTML
+window.playAgain = playAgain;
+
+// Format & Display Time in DOM
+function scoresToDOM() {
+  finalTimeDisplay = finalTime.toFixed(1);
+  baseTime = timePlayed.toFixed(1);
+  penaltyTime = penaltyTime.toFixed(1);
+  baseTimeEl.textContent = `Base Time: ${baseTime}`;
+  penaltyTimeEl.textContent = `Penalty: +${penaltyTime}s`;
+  finalTimeEl.textContent = `${finalTimeDisplay}s`;
+  // Scroll too Top, got to Score Page
+  itemContainer.scrollTo({ top: 0, behavior: 'instant'});
+  showPage(gamePage, scorePage);
+  setTimeout(() => {
+    playAgainBtn.hidden = false;
+  }, 1000);
+}
+
+// Stop Timer, Process Results, got to Score Page
+function checkTime() {
+  if (playerGuessArray.length == questionAmount) {
+    clearInterval(timer);
+    // Check for wrong guesses, add penalty time
+    equationsArray.forEach((equation, index) => {
+      if (equation.evaluated === playerGuessArray[index]){
+        // Corect Guess, No Penalty
+      } else {
+        // Incorect Guess, Add Penalty
+        penaltyTime += 0.5;
+      }
+    });
+    finalTime = timePlayed + penaltyTime;
+    scoresToDOM();
+  }
+}
+
+// Add a tenth of a second to timePlayed
+function addTime() {
+  timePlayed += 0.1;
+  checkTime();
+}
+
+// Start timer when game page is clicked
+function startTimer() {
+  // Reset times
+  timePlayed = 0;
+  penaltyTime = 0;
+  finalTime = 0;
+  timer = setInterval(addTime, 100);
+  gamePage.removeEventListener('click', startTimer);
+}
 
 // Scroll Store user selction in playerGuessArray
 function select(guessedTrue) {
@@ -44,6 +113,9 @@ function select(guessedTrue) {
   // Add payer guess to array
   return guessedTrue ? playerGuessArray.push('true') : playerGuessArray.push('false');
 }
+
+// Add to Window for use in HTML
+window.select = select;
 
 // Get Random Number up to a max number
 function getRandomInt(max) {
@@ -129,12 +201,14 @@ function showPage(currentPage, nextPage) {
 function countdownStart() {
   let startCountdownValue = 3;
   let countdownInterval = setInterval(() => {
+    console.log(startCountdownValue);
     countdown.textContent = startCountdownValue
     startCountdownValue--;
     if (startCountdownValue === -1) {
       clearInterval(countdownInterval);
       countdown.textContent = 'Go!';
-      setTimeout(showPage, 1000, countdown, gamePage);
+      setTimeout(showPage, 1000, countdownPage, gamePage);
+      countdown.textContent = '';
     }
   }, 1000);
 }
@@ -173,3 +247,4 @@ startForm.addEventListener('click', () => {
 });
 
 startForm.addEventListener('submit', selectQuestionAmount);
+gamePage.addEventListener('click', startTimer);
