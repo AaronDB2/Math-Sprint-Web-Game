@@ -30,6 +30,7 @@ let firstNumber = 0;
 let secondNumber = 0;
 let equationObject = {};
 const wrongFormat = [];
+let bestScoreArray = [];
 
 // Time
 let timer;
@@ -37,7 +38,50 @@ let timePlayed = 0;
 let baseTime = 0;
 let penaltyTime = 0;
 let finalTime = 0;
-let finalTimeDisplay = '0.0s';
+let finalTimeDisplay = '0.0';
+
+// Check Local Storage for Best Scores and if there is set bestScoreArray
+function getSavedBestScores() {
+  if (localStorage.getItem('bestScores')) {
+    bestScoreArray = JSON.parse(localStorage.bestScores);
+  } else {
+    bestScoreArray = [
+      { questions: 10, bestScore: finalTimeDisplay },
+      { questions: 25, bestScore: finalTimeDisplay },
+      { questions: 50, bestScore: finalTimeDisplay },
+      { questions: 99, bestScore: finalTimeDisplay },
+    ];
+    localStorage.setItem('bestScores', JSON.stringify(bestScoreArray));
+  }
+  bestScoresToDOM();
+}
+
+// Refresh Splash Page Best Scores
+function bestScoresToDOM() {
+  bestScores.forEach((bestScore, index) => {
+    const bestScoreEl = bestScore;
+    bestScoreEl.textContent = `${bestScoreArray[index].bestScore}s`;
+  });
+}
+
+// Update Best Score Array
+function updateBestScore() {
+  bestScoreArray.forEach((score, index) => {
+    // Select correct Best Score to update
+    if (questionAmount == score.questions) {
+      // Return Best Score as number with one decimal
+      const savedBestScore = Number(bestScoreArray[index].bestScore);
+      // Update if the new final score is less or replacing 0
+      if (savedBestScore === 0 || savedBestScore > finalTime) {
+        bestScoreArray[index].bestScore = finalTimeDisplay;
+      }
+    }
+  });
+  // Update Splash Page
+  bestScoresToDOM();
+  // Save to Local Storage
+  localStorage.setItem('bestScores', JSON.stringify(bestScoreArray));
+}
 
 // Scroll
 let valueY = 0;
@@ -63,6 +107,7 @@ function scoresToDOM() {
   baseTimeEl.textContent = `Base Time: ${baseTime}`;
   penaltyTimeEl.textContent = `Penalty: +${penaltyTime}s`;
   finalTimeEl.textContent = `${finalTimeDisplay}s`;
+  updateBestScore();
   // Scroll too Top, got to Score Page
   itemContainer.scrollTo({ top: 0, behavior: 'instant'});
   showPage(gamePage, scorePage);
@@ -201,14 +246,12 @@ function showPage(currentPage, nextPage) {
 function countdownStart() {
   let startCountdownValue = 3;
   let countdownInterval = setInterval(() => {
-    console.log(startCountdownValue);
     countdown.textContent = startCountdownValue
     startCountdownValue--;
     if (startCountdownValue === -1) {
       clearInterval(countdownInterval);
       countdown.textContent = 'Go!';
       setTimeout(showPage, 1000, countdownPage, gamePage);
-      countdown.textContent = '';
     }
   }, 1000);
 }
@@ -229,6 +272,7 @@ function selectQuestionAmount(e) {
   e.preventDefault();
   questionAmount = getRadioValue();
   showPage(splashPage, countdownPage);
+  countdown.textContent = '';
   countdownStart();
   populateGamePage();
 }
@@ -248,3 +292,6 @@ startForm.addEventListener('click', () => {
 
 startForm.addEventListener('submit', selectQuestionAmount);
 gamePage.addEventListener('click', startTimer);
+
+// On Load
+getSavedBestScores();
